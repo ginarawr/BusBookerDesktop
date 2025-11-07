@@ -1,124 +1,160 @@
 package busbooker.com.view;
 
 import javax.swing.*;
+import javax.swing.table.*;
 import busbooker.com.model.User;
-import busbooker.com.model.Jadwal;  // Pastikan Anda mengimpor kelas Jadwal
+import busbooker.com.model.Jadwal;
+import busbooker.com.util.DBConnection;
 import java.awt.*;
-import java.awt.event.*;
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.List;  // Untuk mengambil data jadwal
+import java.util.List;
 
 public class MainMenu extends JFrame {
-    private User user;
+    private final User user;
+    private final JTable jadwalTable;
+    private final DefaultTableModel model;
 
     public MainMenu(User u) {
         this.user = u;
-        setTitle("BusBooker - Main");
-        setSize(600, 500);  // Memperbesar ukuran agar bisa menampilkan tabel
+        setTitle("🚌 BusBooker - Menu Utama");
+        setSize(850, 550);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
-        // Panel utama
-        var panel = new JPanel() {
+        // 🌈 Background gradien lembut
+        var panel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                // Background Gradient
                 Graphics2D g2d = (Graphics2D) g;
-                Color color1 = new Color(0, 102, 204);
-                Color color2 = new Color(51, 204, 255);
-                GradientPaint gradient = new GradientPaint(0, 0, color1, 0, getHeight(), color2);
-                g2d.setPaint(gradient);
+                GradientPaint gp = new GradientPaint(0, 0,
+                        new Color(0, 102, 204),
+                        0, getHeight(),
+                        new Color(0, 153, 255));
+                g2d.setPaint(gp);
                 g2d.fillRect(0, 0, getWidth(), getHeight());
             }
         };
-        panel.setLayout(new BorderLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        // Panel atas (greeting dan logout)
-        var top = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        top.setOpaque(false);
-        JLabel greetingLabel = new JLabel("Halo, " + u.getUsername() + " (" + u.getRole() + ")");
-        greetingLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        // 🔹 Panel atas (greeting dan tombol)
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+
+        JLabel greetingLabel = new JLabel("Selamat Datang, " + u.getUsername() + " 👋");
+        greetingLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
         greetingLabel.setForeground(Color.WHITE);
-        top.add(greetingLabel);
+        greetingLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        topPanel.add(greetingLabel, BorderLayout.WEST);
 
-        // Tombol Logout
-        JButton logout = new JButton("Logout");
-        logout.setBackground(new Color(255, 69, 0));
-        logout.setForeground(Color.WHITE);
-        logout.setFocusPainted(false);
-        logout.setFont(new Font("Arial", Font.BOLD, 12));
-        logout.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        logout.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        top.add(logout);
-        panel.add(top, BorderLayout.NORTH);
+        // 🔹 Panel tombol kanan atas
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        buttonPanel.setOpaque(false);
 
-        // Panel tengah (Menampilkan Jadwal Bus)
-        var center = new JPanel();
-        center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
-        center.setOpaque(false);
+        JButton btnPemesanan = new JButton("🚌 Pemesanan Tiket");
+        JButton btnRiwayat = new JButton("🎫 Riwayat Transaksi");
+        JButton btnLogout = new JButton("🚪 Logout");
 
-        // Membuat tabel untuk Jadwal Bus
-        String[] columnNames = {"ID Jadwal", "Keberangkatan", "Tujuan", "Waktu", "Tombol Pesan"};
-        Object[][] data = getJadwalData();  // Mengambil data jadwal (akan dijelaskan di bawah)
-        JTable jadwalTable = new JTable(data, columnNames);
-        jadwalTable.setPreferredScrollableViewportSize(new Dimension(550, 200));
-        jadwalTable.setFillsViewportHeight(true);
-        jadwalTable.setBackground(new Color(255, 255, 255));
+        styleButton(btnPemesanan, new Color(0, 153, 255));
+        styleButton(btnRiwayat, new Color(0, 200, 150));
+        styleButton(btnLogout, new Color(255, 80, 80));
 
-        // Menambahkan JScrollPane untuk membuat tabel bisa digulir
-        JScrollPane scrollPane = new JScrollPane(jadwalTable);
-        center.add(scrollPane);
-        
-        panel.add(center, BorderLayout.CENTER);
-        add(panel);
-
-        // Action listeners
-        logout.addActionListener(e -> {
+        // Aksi tombol
+        btnPemesanan.addActionListener(e -> new PemesananForm(user).setVisible(true));
+        btnRiwayat.addActionListener(e -> new TransaksiView(user).setVisible(true));
+        btnLogout.addActionListener(e -> {
             new LoginForm().setVisible(true);
             dispose();
         });
-    }
 
-    // Method untuk mendapatkan data jadwal bus (harus Anda sesuaikan dengan model dan database)
-    private Object[][] getJadwalData() {
-        List<Jadwal> jadwalList = fetchJadwalFromDatabase();  // Ambil data jadwal dari database
-        Object[][] data = new Object[jadwalList.size()][5];
-        
-        for (int i = 0; i < jadwalList.size(); i++) {
-            Jadwal j = jadwalList.get(i);
-            data[i][0] = j.getId();  // ID Jadwal
-            data[i][1] = j.getKeberangkatan();  // Keberangkatan
-            data[i][2] = j.getTujuan();  // Tujuan
-            data[i][3] = j.getWaktu();  // Waktu
-            data[i][4] = new JButton("Pesan Tiket");  // Tombol Pesan
+        buttonPanel.add(btnPemesanan);
+        buttonPanel.add(btnRiwayat);
+        buttonPanel.add(btnLogout);
+        topPanel.add(buttonPanel, BorderLayout.EAST);
+
+        panel.add(topPanel, BorderLayout.NORTH);
+
+        // 🔹 Panel tengah: tabel jadwal bus
+        JPanel center = new JPanel();
+        center.setOpaque(false);
+        center.setLayout(new BorderLayout(10, 10));
+
+        JLabel title = new JLabel("📅 Jadwal Bus Tersedia", SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        title.setForeground(Color.WHITE);
+        center.add(title, BorderLayout.NORTH);
+
+        String[] columnNames = {"ID Jadwal", "Keberangkatan", "Tujuan", "Waktu"};
+        model = new DefaultTableModel(columnNames, 0);
+        jadwalTable = new JTable(model);
+        jadwalTable.setRowHeight(28);
+        jadwalTable.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        jadwalTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        jadwalTable.getTableHeader().setBackground(new Color(0, 90, 180));
+        jadwalTable.getTableHeader().setForeground(Color.WHITE);
+
+        // Ambil data jadwal
+        for (Jadwal j : fetchJadwalFromDatabase()) {
+            model.addRow(new Object[]{
+                    j.getId(),
+                    j.getKeberangkatan(),
+                    j.getTujuan(),
+                    j.getWaktu()
+            });
         }
 
-        return data;
+        JScrollPane scrollPane = new JScrollPane(jadwalTable);
+        scrollPane.setBorder(BorderFactory.createLineBorder(Color.WHITE, 1));
+        center.add(scrollPane, BorderLayout.CENTER);
+
+        panel.add(center, BorderLayout.CENTER);
+
+        add(panel);
     }
 
-    // Method untuk mengambil jadwal dari database (harus Anda sesuaikan)
+    // 🔹 Ambil data jadwal dari database
     private List<Jadwal> fetchJadwalFromDatabase() {
         List<Jadwal> jadwalList = new ArrayList<>();
-        // Implementasi untuk mengambil data jadwal dari database menggunakan JDBC atau ORM
-        try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/busbooker", "root", "password");
+        try (Connection con = DBConnection.getConnection();
              Statement stmt = con.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT * FROM jadwal")) {
-            
+
             while (rs.next()) {
                 int id = rs.getInt("id_jadwal");
                 int idBus = rs.getInt("id_bus");
                 String keberangkatan = rs.getString("asal");
                 String tujuan = rs.getString("tujuan");
                 Timestamp waktu = rs.getTimestamp("waktu");
-                jadwalList.add(new Jadwal(id, idBus, asal, tujuan, waktu));
+
+                jadwalList.add(new Jadwal(id, idBus, keberangkatan, tujuan, waktu));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "❌ Gagal memuat jadwal: " + e.getMessage(),
+                    "Kesalahan Database", JOptionPane.ERROR_MESSAGE);
         }
         return jadwalList;
     }
 
+    // 🔹 Utility: Styling tombol agar seragam
+    private void styleButton(JButton btn, Color bg) {
+        btn.setBackground(bg);
+        btn.setForeground(Color.WHITE);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
+
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btn.setBackground(bg.darker());
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btn.setBackground(bg);
+            }
+        });
+    }
 }
