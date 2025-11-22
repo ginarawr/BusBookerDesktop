@@ -8,20 +8,24 @@ public class Jadwal {
     private String keberangkatan;
     private String tujuan;
     private Timestamp waktu;
+    private double harga;
+    private String namaBus;  // Nama bus dari tabel bus
 
-    // ✅ Constructor tanpa parameter (dibutuhkan oleh beberapa library)
+    // Constructor tanpa parameter
     public Jadwal() {}
 
-    // ✅ Constructor lengkap (ini yang dibutuhkan oleh MainMenu.java)
-    public Jadwal(int id, int idBus, String keberangkatan, String tujuan, Timestamp waktu) {
+    // Constructor lengkap (dengan namaBus)
+    public Jadwal(int id, int idBus, String keberangkatan, String tujuan, Timestamp waktu, double harga, String namaBus) {
         this.id = id;
         this.idBus = idBus;
         this.keberangkatan = keberangkatan;
         this.tujuan = tujuan;
         this.waktu = waktu;
+        this.harga = harga;
+        this.namaBus = namaBus;
     }
 
-    // ✅ Getters dan Setters
+    // Getter and Setter
     public int getId() {
         return id;
     }
@@ -62,15 +66,32 @@ public class Jadwal {
         this.waktu = waktu;
     }
 
-    // ✅ (Opsional) Tambahkan toString agar mudah debug
+    public double getHarga() {
+        return harga;
+    }
+
+    public void setHarga(double harga) {
+        this.harga = harga;
+    }
+
+    public String getNamaBus() {
+        return namaBus;
+    }
+
+    public void setNamaBus(String namaBus) {
+        this.namaBus = namaBus;
+    }
+
     @Override
     public String toString() {
         return "Jadwal{" +
                 "id=" + id +
                 ", idBus=" + idBus +
+                ", namaBus='" + namaBus + '\'' +
                 ", keberangkatan='" + keberangkatan + '\'' +
                 ", tujuan='" + tujuan + '\'' +
                 ", waktu=" + waktu +
+                ", harga=" + harga +
                 '}';
     }
 }
