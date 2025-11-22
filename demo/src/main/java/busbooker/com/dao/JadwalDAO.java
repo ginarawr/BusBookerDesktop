@@ -1,49 +1,43 @@
 package busbooker.com.dao;
 
-import busbooker.com.util.DBConnection;
 import busbooker.com.model.Jadwal;
+import busbooker.com.util.DBConnection;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class JadwalDAO {
+
+    // Fungsi untuk mengambil data jadwal + data bus
     public static List<Jadwal> all() throws SQLException {
-        String sql = "SELECT * FROM jadwal";
+
+        String sql =
+                "SELECT j.id_jadwal, j.id_bus, j.asal, j.tujuan, j.waktu, b.nama_bus, b.harga " +
+                "FROM jadwal j " +
+                "JOIN bus b ON j.id_bus = b.id_bus";  // Join dengan tabel bus
+
+        List<Jadwal> list = new ArrayList<>();
+
         try (Connection c = DBConnection.getConnection();
              PreparedStatement p = c.prepareStatement(sql);
              ResultSet rs = p.executeQuery()) {
-            List<Jadwal> list = new ArrayList<>();
+
             while (rs.next()) {
-                Jadwal j = new Jadwal();
-                j.setId(rs.getInt("id_jadwal"));
-                j.setIdBus(rs.getInt("id_bus"));
-                j.setKeberangkatan(rs.getString("asal"));
-                j.setTujuan(rs.getString("tujuan"));
-                j.setWaktu(rs.getTimestamp("waktu"));
+                // Gunakan constructor yang sesuai untuk membuat objek Jadwal
+                Jadwal j = new Jadwal(
+                        rs.getInt("id_jadwal"),
+                        rs.getInt("id_bus"),
+                        rs.getString("asal"),
+                        rs.getString("tujuan"),
+                        rs.getTimestamp("waktu"),
+                        rs.getDouble("harga"),
+                        rs.getString("nama_bus") // Menambahkan nama bus
+                );
                 list.add(j);
             }
-            return list;
         }
-    }
 
-    public static boolean add(Jadwal j) throws SQLException {
-        String sql = "INSERT INTO jadwal (id_bus,asal,tujuan,waktu) VALUES (?,?,?,?)";
-        try (Connection c = DBConnection.getConnection();
-             PreparedStatement p = c.prepareStatement(sql)) {
-            p.setInt(1, j.getIdBus());
-            p.setString(2, j.getKeberangkatan());
-            p.setString(3, j.getTujuan());
-            p.setTimestamp(4, j.getWaktu());
-            return p.executeUpdate() > 0;
-        }
-    }
-
-    public static boolean delete(int id) throws SQLException {
-        String sql = "DELETE FROM jadwal WHERE id_jadwal = ?";
-        try (Connection c = DBConnection.getConnection();
-             PreparedStatement p = c.prepareStatement(sql)) {
-            p.setInt(1, id);
-            return p.executeUpdate() > 0;
-        }
+        return list;
     }
 }

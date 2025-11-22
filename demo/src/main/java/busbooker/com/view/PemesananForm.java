@@ -1,135 +1,136 @@
 package busbooker.com.view;
 
-import javax.swing.*;
-import javax.swing.border.*;
-import java.awt.*;
-import java.util.List;
-import busbooker.com.dao.JadwalDAO;
-import busbooker.com.dao.PemesananDAO;
-import busbooker.com.model.Jadwal;
-import busbooker.com.model.Pemesanan;
 import busbooker.com.model.User;
+import busbooker.com.model.Jadwal;
+import javax.swing.border.EmptyBorder;
+
+
+import javax.swing.*;
+import java.awt.*;
 
 public class PemesananForm extends JFrame {
     private final User user;
+    private final Jadwal jadwal;
 
-    public PemesananForm(User u) {
-        this.user = u;
+    // Konstruktor PemesananForm yang menerima parameter User dan Jadwal
+    public PemesananForm(User user, Jadwal jadwal) {
+        this.user = user;
+        this.jadwal = jadwal;
 
-        // 🔹 Frame dasar
-        setTitle("🚌 Pemesanan Tiket - BusBooker");
-        setSize(850, 500);
+        setTitle("Pemesanan Tiket Bus");
+        setSize(600, 500);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setLayout(new BorderLayout(10, 10));
 
-        // 🔹 Header (judul atas)
-        JLabel header = new JLabel("Daftar Jadwal Bus", SwingConstants.CENTER);
-        header.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        header.setForeground(new Color(30, 60, 90));
-        header.setBorder(new EmptyBorder(20, 10, 10, 10));
-        add(header, BorderLayout.NORTH);
+        // Panel utama untuk form
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BorderLayout());
+        mainPanel.setBackground(new Color(255, 255, 255));
 
-        // 🔹 Panel daftar jadwal
-        JPanel listPanel = new JPanel();
-        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
-        listPanel.setBackground(Color.WHITE);
+        // Header panel
+        JPanel headerPanel = new JPanel();
+        headerPanel.setBackground(new Color(0, 102, 204));
+        JLabel headerLabel = new JLabel("Pemesanan Tiket");
+        headerLabel.setForeground(Color.WHITE);
+        headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        headerPanel.add(headerLabel);
+        mainPanel.add(headerPanel, BorderLayout.NORTH);
 
-        JScrollPane scrollPane = new JScrollPane(listPanel);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        add(scrollPane, BorderLayout.CENTER);
+        // Form panel untuk detail pemesanan
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new GridLayout(5, 2, 10, 10));
+        formPanel.setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // 🔹 Footer info
-        JLabel infoLabel = new JLabel("Klik tombol 'Pesan' untuk melakukan pemesanan tiket.", SwingConstants.CENTER);
-        infoLabel.setFont(new Font("Segoe UI", Font.ITALIC, 13));
-        infoLabel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        add(infoLabel, BorderLayout.SOUTH);
+        // Informasi Jadwal
+        JLabel jadwalLabel = new JLabel("Jadwal Bus: " + jadwal.getKeberangkatan() + " → " + jadwal.getTujuan());
+        jadwalLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        formPanel.add(jadwalLabel);
 
-        // 🔹 Ambil data jadwal dari database
+        // Jumlah Orang
+        JLabel jumlahLabel = new JLabel("Jumlah Orang:");
+        JTextField jumlahField = new JTextField();
+        formPanel.add(jumlahLabel);
+        formPanel.add(jumlahField);
+
+        // Pilih Metode Pembayaran
+        JLabel metodeLabel = new JLabel("Metode Pembayaran:");
+        JComboBox<String> metodeComboBox = new JComboBox<>(new String[]{"Tunai", "QR Code"});
+        formPanel.add(metodeLabel);
+        formPanel.add(metodeComboBox);
+
+        // Panel untuk gambar QR Code (hanya muncul jika memilih "QR Code")
+        JLabel qrCodeLabel = new JLabel();
+        qrCodeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        qrCodeLabel.setPreferredSize(new Dimension(200, 200));  // Ukuran gambar QR Code
+
+        // Menyembunyikan QR Code pada awalnya
+        qrCodeLabel.setVisible(false);
+
+        // Menambahkan gambar QR Code dari file
         try {
-            List<Jadwal> list = JadwalDAO.all();
-
-            if (list.isEmpty()) {
-                JLabel kosong = new JLabel("Tidak ada jadwal tersedia saat ini.", SwingConstants.CENTER);
-                kosong.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-                listPanel.add(kosong);
-            } else {
-                for (Jadwal j : list) {
-                    // Panel tiap jadwal
-                    JPanel card = new JPanel(new BorderLayout());
-                    card.setBackground(new Color(250, 250, 255));
-                    card.setBorder(new CompoundBorder(
-                            new LineBorder(new Color(220, 220, 240), 1, true),
-                            new EmptyBorder(10, 15, 10, 15)
-                    ));
-
-                    // Info jadwal (kiri)
-                    String detail = "<html><b>ID:</b> " + j.getId() +
-                            " &nbsp;&nbsp; <b>Bus:</b> " + j.getIdBus() +
-                            "<br><b>Rute:</b> " + j.getKeberangkatan() + " → " + j.getTujuan() +
-                            "<br><b>Waktu:</b> " + j.getWaktu() + "</html>";
-                    JLabel label = new JLabel(detail);
-                    label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-                    card.add(label, BorderLayout.CENTER);
-
-                    // Tombol pesan (kanan)
-                    JButton book = new JButton("Pesan");
-                    book.setBackground(new Color(0, 102, 204));
-                    book.setForeground(Color.WHITE);
-                    book.setFocusPainted(false);
-                    book.setFont(new Font("Segoe UI", Font.BOLD, 13));
-                    book.setBorder(new EmptyBorder(8, 20, 8, 20));
-                    book.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-                    // Efek hover
-                    book.addMouseListener(new java.awt.event.MouseAdapter() {
-                        @Override
-                        public void mouseEntered(java.awt.event.MouseEvent evt) {
-                            book.setBackground(new Color(0, 80, 180));
-                        }
-
-                        @Override
-                        public void mouseExited(java.awt.event.MouseEvent evt) {
-                            book.setBackground(new Color(0, 102, 204));
-                        }
-                    });
-
-                    // Aksi pesan
-                    book.addActionListener(e -> {
-                        try {
-                            Pemesanan p = new Pemesanan();
-                            p.setIdUser(user.getId());
-                            p.setIdJadwal(j.getId());
-                            p.setStatus("Belum Lunas");
-
-                            boolean ok = PemesananDAO.create(p);
-                            if (ok) {
-                                JOptionPane.showMessageDialog(this,
-                                        "✅ Pesanan berhasil dibuat!",
-                                        "Berhasil", JOptionPane.INFORMATION_MESSAGE);
-                            } else {
-                                JOptionPane.showMessageDialog(this,
-                                        "Gagal membuat pesanan.",
-                                        "Error", JOptionPane.ERROR_MESSAGE);
-                            }
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                            JOptionPane.showMessageDialog(this,
-                                    "Terjadi kesalahan: " + ex.getMessage(),
-                                    "Error", JOptionPane.ERROR_MESSAGE);
-                        }
-                    });
-
-                    card.add(book, BorderLayout.EAST);
-                    listPanel.add(card);
-                    listPanel.add(Box.createVerticalStrut(8));
-                }
-            }
+            ImageIcon qrCodeImage = new ImageIcon(getClass().getResource("/assets/qrcode.png"));  // Path gambar QR Code
+            qrCodeLabel.setIcon(qrCodeImage);
         } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this,
-                    "Gagal memuat jadwal: " + e.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();  // Jika gambar tidak ditemukan
         }
+
+        formPanel.add(qrCodeLabel);
+
+        // Total Harga
+        JLabel totalHargaLabel = new JLabel("Total Harga: Rp " + jadwal.getHarga());
+        totalHargaLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        formPanel.add(totalHargaLabel);
+
+        // Tombol Konfirmasi Pemesanan
+        JButton konfirmasiButton = new JButton("Konfirmasi Pemesanan");
+        konfirmasiButton.setBackground(new Color(0, 102, 204));
+        konfirmasiButton.setForeground(Color.WHITE);
+        konfirmasiButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        konfirmasiButton.setFocusPainted(false);
+        konfirmasiButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        // Tombol Kembali
+        JButton kembaliButton = new JButton("Kembali");
+        kembaliButton.setBackground(new Color(255, 80, 80));
+        kembaliButton.setForeground(Color.WHITE);
+        kembaliButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        kembaliButton.setFocusPainted(false);
+        kembaliButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        // Panel untuk tombol konfirmasi dan kembali
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        buttonPanel.add(konfirmasiButton);
+        buttonPanel.add(kembaliButton);
+
+        // Aksi tombol konfirmasi pemesanan
+        konfirmasiButton.addActionListener(e -> {
+            String jumlah = jumlahField.getText().trim();
+            String metode = (String) metodeComboBox.getSelectedItem();
+            if (jumlah.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Jumlah orang harus diisi!");
+            } else {
+                if ("QR Code".equals(metode)) {
+                    // Menampilkan QR Code ketika memilih metode pembayaran QR Code
+                    qrCodeLabel.setVisible(true);
+                    JOptionPane.showMessageDialog(this, "QR Code telah ditampilkan. Pembayaran QRIS.");
+                } else {
+                    // Jika tunai, langsung konfirmasi pemesanan
+                    JOptionPane.showMessageDialog(this, "Pesanan Berhasil! Pembayaran Tunai.");
+                }
+                dispose();
+            }
+        });
+
+        // Aksi tombol kembali
+        kembaliButton.addActionListener(e -> {
+            dispose();
+        });
+
+        mainPanel.add(formPanel, BorderLayout.CENTER);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        add(mainPanel);
+        setVisible(true);
     }
 }

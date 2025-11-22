@@ -19,7 +19,7 @@ public class UserDAO {
     }
 
     public static User login(String email, String password) throws SQLException {
-        String sql = "SELECT * FROM user WHERE email = ? AND password = ?";
+        String sql = "SELECT * FROM users WHERE email = ? AND password = ?";
         try (Connection c = DBConnection.getConnection();
              PreparedStatement p = c.prepareStatement(sql)) {
             p.setString(1, email);
@@ -27,7 +27,7 @@ public class UserDAO {
             ResultSet rs = p.executeQuery();
             if (rs.next()) {
                 User u = new User();
-                u.setId(rs.getInt("id_user"));
+                u.setId(rs.getInt("id"));
                 u.setUsername(rs.getString("username"));
                 u.setEmail(rs.getString("email"));
                 u.setRole(rs.getString("role"));
