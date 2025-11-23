@@ -7,7 +7,7 @@ import java.sql.*;
 
 public class UserDAO {
     public static boolean register(User u) throws SQLException {
-        String sql = "INSERT INTO user (username,email,password,role) VALUES (?,?,?,?)";
+        String sql = "INSERT INTO users (username,email,password,role) VALUES (?,?,?,?)";
         try (Connection c = DBConnection.getConnection();
              PreparedStatement p = c.prepareStatement(sql)) {
             p.setString(1, u.getUsername());

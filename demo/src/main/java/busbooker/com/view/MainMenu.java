@@ -5,184 +5,265 @@ import busbooker.com.model.User;
 import busbooker.com.model.Jadwal;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.border.CompoundBorder;
 import java.awt.*;
-import java.sql.*;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.List;
-import busbooker.com.util.DBConnection;
-import busbooker.com.util.HashUtil;
-import busbooker.com.dao.PemesananDAO;
-import java.util.ArrayList;
 
 public class MainMenu extends JFrame {
     private final User user;
-    private final JTable jadwalTable;
-    private final DefaultTableModel model;
+    private final JPanel listPanel;   // Panel tempat card-card jadwal ditampilkan
+    private final JTextField asalField;
+    private final JTextField tujuanField;
 
-    // Konstruktor untuk MainMenu dengan parameter user
     public MainMenu(User u) {
         this.user = u;
-        setTitle("🚌 BusBooker - Menu Utama");
-        setSize(900, 600); // Ukuran tampilan
+
+        setTitle("🚌 BusBooker - Pesan Tiket");
+        setSize(1000, 650);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
 
-        // Panel Utama (Background)
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(new Color(250, 250, 250));
-
-        // Panel Header
-        JPanel headerPanel = new JPanel();
+        // ================= HEADER =================
+        JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(new Color(0, 102, 204));
-        headerPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 20, 10));
+        headerPanel.setBorder(new EmptyBorder(10, 20, 10, 20));
 
-        JLabel titleLabel = new JLabel("Dashboard BusBooker");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        // LEFT: Logo + gambar bus
+        JPanel leftHeader = new JPanel();
+        leftHeader.setLayout(new BoxLayout(leftHeader, BoxLayout.Y_AXIS));
+        leftHeader.setOpaque(false);
+
+        JLabel titleLabel = new JLabel("BusBooker");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 26));
         titleLabel.setForeground(Color.WHITE);
-        headerPanel.add(titleLabel);
 
-        // Panel Search dan Filter
-        JPanel searchPanel = new JPanel();
-        searchPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 20, 10));
+        // Tambah subtitel kecil
+        JLabel subtitleLabel = new JLabel("Pesan tiket bus dengan cepat dan nyaman");
+        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        subtitleLabel.setForeground(new Color(230, 240, 255));
 
-        // Search Field
-        JTextField searchField = new JTextField(20);
-        searchField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        searchField.setText("Cari asal & tujuan");
-
-        // Tombol Cari
-        JButton searchButton = new JButton("Cari");
-        searchButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        searchButton.setBackground(new Color(0, 102, 204));
-        searchButton.setForeground(Color.WHITE);
-
-        JButton pilihBusButton = new JButton("Pilih Bus");
-        pilihBusButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        pilihBusButton.setBackground(new Color(0, 102, 204));
-        pilihBusButton.setForeground(Color.WHITE);
-
-        // ComboBox untuk Filter Hari
-        JComboBox<String> dayComboBox = new JComboBox<>(new String[]{"Senin, 13 Mei 2024", "Selasa, 14 Mei 2024", "Rabu, 15 Mei 2024"});
-        dayComboBox.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-
-        searchPanel.add(searchField);
-        searchPanel.add(searchButton);
-        searchPanel.add(dayComboBox);
-
-        // Panel Daftar Jadwal
-        JPanel contentPanel = new JPanel();
-        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-
-        String[] columnNames = {"Nama Bus", "Rute", "Jam Keberangkatan", "Harga", "Pilih Bus"};
-        model = new DefaultTableModel(columnNames, 0);
-        jadwalTable = new JTable(model);
-        jadwalTable.setRowHeight(50);
-        jadwalTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-
-        // Mengambil data jadwal dari database
+        // Tambah gambar bus di bawah text
+        JLabel busImageLabel = new JLabel();
+        busImageLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         try {
-            List<Jadwal> jadwalList = JadwalDAO.all();  // Mendapatkan data jadwal dari DAO
-            for (Jadwal j : jadwalList) {
-                
-                pilihBusButton.addActionListener(e -> {
-                    // Mengarahkan ke PemesananForm dengan User dan Jadwal yang dipilih
-                    new PemesananForm(user, j).setVisible(true);
-                });
-
-                model.addRow(new Object[] {
-                        j.getNamaBus(),  // Menampilkan nama bus yang diambil dari database
-                        j.getKeberangkatan() + " → " + j.getTujuan(),
-                        j.getWaktu(),
-                        "Rp " + j.getHarga(),
-                        pilihBusButton
-                });
-            }
-        } catch (SQLException e) {
+            ImageIcon icon = new ImageIcon(getClass().getResource("/assets/busimage.png"));
+            Image scaled = icon.getImage().getScaledInstance(120, 60, Image.SCALE_SMOOTH);
+            busImageLabel.setIcon(new ImageIcon(scaled));
+        } catch (Exception e) {
+            // Kalau gambar tidak ketemu, tidak apa-apa, hanya tidak tampil
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "❌ Gagal memuat jadwal: " + e.getMessage(),
-                    "Kesalahan Database", JOptionPane.ERROR_MESSAGE);
         }
 
-        // Nonaktifkan editor untuk semua kolom selain kolom tombol "Pilih Bus"
-jadwalTable.setDefaultEditor(String.class, null); // Menonaktifkan editor untuk kolom selain "Pilih Bus"
+        leftHeader.add(titleLabel);
+        leftHeader.add(Box.createVerticalStrut(2));
+        leftHeader.add(subtitleLabel);
+        leftHeader.add(Box.createVerticalStrut(6));
+        leftHeader.add(busImageLabel);
 
+        // RIGHT: sapaan user
+        JLabel userLabel = new JLabel("Halo, " + (user != null ? user.getUsername() : "Penumpang"));
+        userLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        userLabel.setForeground(Color.WHITE);
+        userLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
-        // Menambahkan ButtonColumn untuk merender tombol pada kolom "Pilih Bus"
-        // Menambahkan ButtonColumn untuk merender tombol pada kolom "Pilih Bus"
-        ButtonColumn buttonColumn = new ButtonColumn(jadwalTable, 4); // Indeks kolom "Pilih Bus" adalah 4
+        headerPanel.add(leftHeader, BorderLayout.WEST);
+        headerPanel.add(userLabel, BorderLayout.EAST);
 
+        // ================= FILTER / SEARCH BAR =================
+        JPanel filterPanel = new JPanel();
+        filterPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        filterPanel.setBorder(new EmptyBorder(8, 20, 8, 20));
+        filterPanel.setBackground(new Color(245, 245, 245));
 
-        JScrollPane scrollPane = new JScrollPane(jadwalTable);
-        contentPanel.add(scrollPane);
+        asalField = new JTextField(12);
+        asalField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        asalField.setBorder(BorderFactory.createTitledBorder("Asal"));
 
-        mainPanel.add(headerPanel, BorderLayout.NORTH);
-        mainPanel.add(searchPanel, BorderLayout.CENTER);
-        mainPanel.add(contentPanel, BorderLayout.SOUTH);
+        tujuanField = new JTextField(12);
+        tujuanField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        tujuanField.setBorder(BorderFactory.createTitledBorder("Tujuan"));
 
-        add(mainPanel);
+        JButton searchButton = new JButton("Cari Jadwal");
+        searchButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        searchButton.setBackground(new Color(0, 102, 204));
+        searchButton.setForeground(Color.WHITE);
+        searchButton.setFocusPainted(false);
+        searchButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        filterPanel.add(asalField);
+        filterPanel.add(tujuanField);
+        filterPanel.add(searchButton);
+
+        // Panel atas gabungkan header + filter
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BorderLayout());
+        topPanel.add(headerPanel, BorderLayout.NORTH);
+        topPanel.add(filterPanel, BorderLayout.SOUTH);
+
+        add(topPanel, BorderLayout.NORTH);
+
+        // ================= LIST PANEL (CARD-CARD JADWAL) =================
+        listPanel = new JPanel();
+        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
+        listPanel.setBackground(new Color(235, 240, 245));
+
+        JScrollPane scrollPane = new JScrollPane(listPanel);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16); // smooth scrolling
+
+        add(scrollPane, BorderLayout.CENTER);
+
+        // Event tombol Cari
+        searchButton.addActionListener(e -> loadJadwal());
+
+        // Pertama kali: tampilkan semua jadwal
+        loadJadwal();
+
         setVisible(true);
     }
 
-    // Fungsi untuk mengambil data jadwal dari database
-    private List<Jadwal> fetchJadwalFromDatabase() {
-        List<Jadwal> jadwalList = new ArrayList<>();
-        String sql = "SELECT j.id_jadwal, j.id_bus, j.asal, j.tujuan, j.waktu, b.nama_bus, b.harga " +
-                     "FROM jadwal j " +
-                     "JOIN bus b ON j.id_bus = b.id_bus";  // Join dengan tabel bus untuk nama bus dan harga
+    /**
+     * Load jadwal dari database dan tampilkan dalam bentuk card.
+     * Jika asal / tujuan diisi, bisa difilter (sementara ini simple: filter di sisi Java).
+     */
+    private void loadJadwal() {
+        listPanel.removeAll(); // bersihkan dulu
 
-        try (Connection con = DBConnection.getConnection();
-             Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {  // Eksekusi query
+        String asalFilter = asalField.getText().trim();
+        String tujuanFilter = tujuanField.getText().trim();
 
-            // Cek apakah data ditemukan
-            if (!rs.isBeforeFirst()) {
-                JOptionPane.showMessageDialog(this, "Tidak ada jadwal yang tersedia.",
-                        "Pemberitahuan", JOptionPane.INFORMATION_MESSAGE);
-                return jadwalList;
-            }
+        try {
+            List<Jadwal> jadwalList = JadwalDAO.all();
 
-            // Ambil data dari ResultSet
-            while (rs.next()) {
-                int id = rs.getInt("id_jadwal");
-                String keberangkatan = rs.getString("asal");
-                String tujuan = rs.getString("tujuan");
-                Timestamp waktu = rs.getTimestamp("waktu");
-                String namaBus = rs.getString("nama_bus");  // Nama bus dari tabel bus
-                double harga = rs.getDouble("harga");  // Harga bus dari tabel bus
+            if (jadwalList.isEmpty()) {
+                JLabel emptyLabel = new JLabel("Belum ada jadwal tersedia.");
+                emptyLabel.setFont(new Font("Segoe UI", Font.ITALIC, 14));
+                emptyLabel.setForeground(Color.DARK_GRAY);
+                emptyLabel.setBorder(new EmptyBorder(20, 20, 20, 20));
+                listPanel.add(emptyLabel);
+            } else {
+                for (Jadwal j : jadwalList) {
+                    // Filter sederhana berdasarkan asal & tujuan (opsional)
+                    if (!asalFilter.isEmpty() &&
+                            !j.getKeberangkatan().toLowerCase().contains(asalFilter.toLowerCase())) {
+                        continue;
+                    }
+                    if (!tujuanFilter.isEmpty() &&
+                            !j.getTujuan().toLowerCase().contains(tujuanFilter.toLowerCase())) {
+                        continue;
+                    }
 
-                // Membuat objek Jadwal dengan harga dan menambahkannya ke list
-                Jadwal jadwal = new Jadwal(id, rs.getInt("id_bus"), keberangkatan, tujuan, waktu, harga, namaBus);
-
-                // Menambahkan tombol Pilih Bus dengan event listener
-                JButton pilihBusButton = new JButton("Pilih Bus");
-                pilihBusButton.addActionListener(e -> {
-                    // Mengarahkan ke PemesananForm dengan User dan Jadwal yang dipilih
-                    new PemesananForm(user, jadwal).setVisible(true);
-                });
-
-                // Menambahkan tombol ke dalam list jadwal
-                jadwalList.add(jadwal);
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "❌ Gagal memuat jadwal: " + e.getMessage(),
-                    "Kesalahan Database", JOptionPane.ERROR_MESSAGE);
-        }
-
-        return jadwalList;  // Mengembalikan list jadwal yang berhasil diambil
-    }
-
-    // Fungsi untuk mengambil harga bus berdasarkan id_bus
-    private double getBusHarga(int idBus) {
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement stmt = con.prepareStatement("SELECT harga FROM bus WHERE id_bus = ?")) {
-            stmt.setInt(1, idBus);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getDouble("harga");
+                    JPanel card = createJadwalCard(j);
+                    listPanel.add(card);
+                    listPanel.add(Box.createVerticalStrut(10)); // spasi antar card
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Gagal memuat jadwal: " + e.getMessage(),
+                    "Kesalahan Database",
+                    JOptionPane.ERROR_MESSAGE);
         }
-        return 0;
+
+        listPanel.revalidate();
+        listPanel.repaint();
+    }
+
+    /**
+     * Membuat satu card jadwal (seperti item list di aplikasi tiket online).
+     */
+    private JPanel createJadwalCard(Jadwal j) {
+        JPanel card = new JPanel();
+        card.setLayout(new BorderLayout());
+        card.setPreferredSize(new Dimension(900, 100));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+        card.setBackground(Color.WHITE);
+        card.setBorder(new CompoundBorder(
+                new EmptyBorder(5, 20, 5, 20),
+                new LineBorder(new Color(220, 220, 220), 1, true)
+        ));
+
+        // ========== LEFT: Info Bus & Rute ==========
+        JPanel leftPanel = new JPanel();
+        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+        leftPanel.setOpaque(false);
+
+        JLabel namaBusLabel = new JLabel(j.getNamaBus() != null ? j.getNamaBus() : "Bus");
+        namaBusLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+
+        JLabel ruteLabel = new JLabel(j.getKeberangkatan() + " → " + j.getTujuan());
+        ruteLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        ruteLabel.setForeground(Color.DARK_GRAY);
+
+        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, HH:mm");
+        String waktuStr = (j.getWaktu() != null) ? sdf.format(j.getWaktu()) : "-";
+        JLabel waktuLabel = new JLabel("Berangkat: " + waktuStr);
+        waktuLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        waktuLabel.setForeground(new Color(80, 80, 80));
+
+        leftPanel.add(namaBusLabel);
+        leftPanel.add(Box.createVerticalStrut(5));
+        leftPanel.add(ruteLabel);
+        leftPanel.add(Box.createVerticalStrut(5));
+        leftPanel.add(waktuLabel);
+
+        // ========== CENTER: Info tambahan ==========
+        JPanel centerPanel = new JPanel();
+        centerPanel.setOpaque(false);
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+
+        JLabel fasilitasLabel = new JLabel("AC • Reclining Seat • Bagasi");
+        fasilitasLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        fasilitasLabel.setForeground(new Color(100, 100, 100));
+
+        centerPanel.add(Box.createVerticalGlue());
+        centerPanel.add(fasilitasLabel);
+        centerPanel.add(Box.createVerticalGlue());
+
+        // ========== RIGHT: Harga + Tombol Pilih ==========
+        JPanel rightPanel = new JPanel();
+        rightPanel.setOpaque(false);
+        rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
+        rightPanel.setBorder(new EmptyBorder(0, 10, 0, 0));
+
+        String hargaStr = String.format("Rp %,.0f", j.getHarga()).replace(",", ".");
+        JLabel hargaLabel = new JLabel(hargaStr);
+        hargaLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        hargaLabel.setForeground(new Color(0, 153, 0));
+        hargaLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+
+        JButton pilihButton = new JButton("Pilih");
+        pilihButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        pilihButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        pilihButton.setBackground(new Color(255, 140, 0));
+        pilihButton.setForeground(Color.WHITE);
+        pilihButton.setFocusPainted(false);
+        pilihButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        pilihButton.setPreferredSize(new Dimension(100, 35));
+        pilihButton.setMaximumSize(new Dimension(100, 35));
+
+        // Aksi ketika tombol PILIH diklik
+        pilihButton.addActionListener(e -> {
+            new PemesananForm(user, j).setVisible(true);
+        });
+
+        rightPanel.add(Box.createVerticalGlue());
+        rightPanel.add(hargaLabel);
+        rightPanel.add(Box.createVerticalStrut(8));
+        rightPanel.add(pilihButton);
+        rightPanel.add(Box.createVerticalGlue());
+
+        card.add(leftPanel, BorderLayout.WEST);
+        card.add(centerPanel, BorderLayout.CENTER);
+        card.add(rightPanel, BorderLayout.EAST);
+
+        return card;
     }
 }
